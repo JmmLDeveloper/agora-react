@@ -98,8 +98,6 @@ function initNormalClient() {
 
 client.on('stream-added', function (evt) {
   var stream = evt.stream;
-  var streamId = stream.getId();
-  // Check if the stream is local
   client.subscribe(stream, function (err) {
     console.log("[ERROR] : subscribe stream failed", err);
   });
@@ -117,13 +115,15 @@ function flagListeners(setRemoteStreams) {
   client.on("mute-video", (ev) => {
     let id = ev.uid;
     setRemoteStreams(streams => {
-      console.log('estoy aqui dentro')
-      return streams.map(stream => {
+      console.time('mute')
+      let result = streams.map(stream => {
         if (stream.stream.getId() == id)
           return { ...stream, videoFlag: false }
         else
           return stream
       })
+      console.time('mute')
+      return result
     })
   })
 
@@ -132,10 +132,15 @@ function flagListeners(setRemoteStreams) {
 
     setRemoteStreams(streams => {
       return streams.map(stream => {
-        if (stream.stream.getId() == id)
-          return { ...stream, videoFlag: true }
-        else
-          return stream
+        console.time('mute')
+        let result = streams.map(stream => {
+          if (stream.stream.getId() == id)
+            return { ...stream, videoFlag: true }
+          else
+            return stream
+        })
+        console.time('mute')
+        return result
       })
     })
   })
@@ -172,14 +177,13 @@ export default function AgoraVideoMedia() {
   const [screenFlag, setScreenFlag] = useState(false)
   const [localStream, setLocalStream] = useState(false)
 
-  flagListeners(setRemoteStreams)
-
   useEffect(() => {
     (async () => {
       if (!localStream) {
         let ls;
         try {
           ls = await initNormalClient()
+          flagListeners(setRemoteStreams)
           client.on('stream-subscribed', function (evt) {
             console.log(evt)
             const addNewSteam = (streams) => {
@@ -217,6 +221,7 @@ export default function AgoraVideoMedia() {
     }
   }
   const toggleVideo = () => {
+    console.log('toggle video')
     if (videoFlag) {
       setVideoFlag(false)
       localStream.muteVideo()
@@ -225,6 +230,8 @@ export default function AgoraVideoMedia() {
       setVideoFlag(true)
       localStream.unmuteVideo()
     }
+    console.log('toggle video')
+
   }
   const toggleScreen = () => {
     if (screenFlag) {
@@ -246,15 +253,16 @@ export default function AgoraVideoMedia() {
           localStream && <VideoBox localFlag={true} stream={localStream} />
         }
         {
-          remoteStreams.map(s => (
-            <VideoBox
+          remoteStreams.map(s => {
+            console.log(s,'WEEENO PUES')
+            return (<VideoBox
               key={s.stream.getId()}
               localFlag={false}
               videoFlag={s.videoFlag}
               audioFlag={s.audioFlag}
               stream={s.stream}
-            />
-          ))
+            />)
+          })
         }
       </div>
       <div id="agora-controls">
