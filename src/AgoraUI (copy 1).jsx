@@ -12,18 +12,7 @@ AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.NONE)
 
 
 const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-let isClientReady = false;
 const screenClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-
-
-
-const localScreenStream = AgoraRTC.createStream({
-  audio: false,
-  video: false,
-  screen: true,
-  screenAudio: true,
-  mediaSource: 'screen',
-});
 
 function VideoBox({ stream, audioFlag, videoFlag, localFlag }) {
 
@@ -91,6 +80,37 @@ function initNormalClient() {
       });
     }, (err) => {
       console.log('there seems to be and error with localStream')
+      reject(err)
+    })
+  })
+}
+
+function initScreenClient() {
+  return new Promise((resolve, reject) => {
+    const localScreenStream = AgoraRTC.createStream({
+      audio: false,
+      video: false,
+      screen: true,
+      screenAudio: true,
+      mediaSource: 'screen',
+    });
+    
+    screenClient.init(angoraConfig.appId);
+
+    screenClient.join(angoraConfig.token, angoraConfig.room, null, (uid) => {
+      localScreenStream.setVideoProfile('360p_4');
+      localScreenStream.init(() => {
+        screenClient.publish(localScreenStream, function (err) {
+          console.log("[ERROR] : publish local stream error: " + err);
+          reject()
+        })
+        resolve(localScreenStream);
+      }, (err) => {
+        console.log('failure at init normal local stream')
+        reject(err)
+      });
+    }, (err) => {
+      console.log('there seems to be and error with localSCreenStream')
       reject(err)
     })
   })
@@ -170,7 +190,7 @@ export default function AgoraVideoMedia() {
   const [audioFlag, setAudioFlag] = useState(true)
   const [videoFlag, setVideoFlag] = useState(true)
   const [remoteStreams, setRemoteStreams] = useState([])
-  const [screenFlag, setScreenFlag] = useState(false)
+  const [localScreenStream,setLocalScreenStream] = useState(null)
   const [localStream, setLocalStream] = useState(false)
 
   useEffect(() => {
@@ -229,12 +249,15 @@ export default function AgoraVideoMedia() {
     console.log('toggle video')
 
   }
-  const toggleScreen = () => {
-    if (screenFlag) {
-      setScreenFlag(false)
+  const toggleScreen = async () => {
+    if (!localScreenStream) {
+      console.log('comienza')
+      let lss = await initScreenClient()
+      console.log('termina')
+      setLocalScreenStream(lss)
     }
     else {
-      setScreenFlag(true)
+      
     }
   }
   const endCall = () => {
@@ -247,6 +270,9 @@ export default function AgoraVideoMedia() {
       <div id="streams">
         {
           localStream && <VideoBox localFlag={true} stream={localStream} />
+        }
+        {
+          localScreenStream && <VideoBox localFlag={true} stream={localScreenStream} />
         }
         {
           remoteStreams.map(s => {
@@ -287,7 +313,7 @@ export default function AgoraVideoMedia() {
         </button>
         <button onClick={toggleScreen}>
           {
-            screenFlag ?
+            localScreenStream ?
               <span className="material-icons">
                 screen_share
             </span> :

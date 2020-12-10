@@ -1,6 +1,6 @@
 import './App.css';
 
-import AgoraVideoMedia from './AgoraVideoMedia'
+import AgoraVideoMedia from './AgoraVideoMedia.jsx'
 
 function App() {
   return (
