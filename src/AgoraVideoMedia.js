@@ -115,14 +115,12 @@ function flagListeners(setRemoteStreams) {
   client.on("mute-video", (ev) => {
     let id = ev.uid;
     setRemoteStreams(streams => {
-      console.time('mute')
       let result = streams.map(stream => {
         if (stream.stream.getId() == id)
           return { ...stream, videoFlag: false }
         else
           return stream
       })
-      console.time('mute')
       return result
     })
   })
@@ -131,23 +129,21 @@ function flagListeners(setRemoteStreams) {
     let id = ev.uid;
 
     setRemoteStreams(streams => {
-      return streams.map(stream => {
-        console.time('mute')
-        let result = streams.map(stream => {
-          if (stream.stream.getId() == id)
-            return { ...stream, videoFlag: true }
-          else
-            return stream
-        })
-        console.time('mute')
-        return result
+      let result = streams.map(stream => {
+        if (stream.stream.getId() == id)
+          return { ...stream, videoFlag: true}
+        else
+          return stream
       })
+      return result
     })
   })
+
 
   client.on("unmute-audio", (ev) => {
     let id = ev.uid;
     setRemoteStreams(streams => {
+      console.log(streams)
       return streams.map(stream => {
         if (stream.stream.getId() == id)
           return { ...stream, audioFlag: true }
@@ -186,13 +182,13 @@ export default function AgoraVideoMedia() {
           flagListeners(setRemoteStreams)
           client.on('stream-subscribed', function (evt) {
             console.log(evt)
-            const addNewSteam = (streams) => {
+            const addNewStream = (streams) => {
               if (evt.stream && streams.some(s => s.stream.getId() == evt.stream.getId()))
                 return streams
               else
                 return streams.concat({ stream: evt.stream, audioFlag: true, videoFlag: true })
             }
-            setRemoteStreams(addNewSteam)
+            setRemoteStreams(addNewStream)
           })
           client.on("peer-leave", function (evt) {
             if (!evt.stream)
@@ -254,7 +250,7 @@ export default function AgoraVideoMedia() {
         }
         {
           remoteStreams.map(s => {
-            console.log(s,'WEEENO PUES')
+            console.log(s, 'WEEENO PUES')
             return (<VideoBox
               key={s.stream.getId()}
               localFlag={false}
